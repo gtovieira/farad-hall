@@ -157,7 +157,7 @@ mailer. Recipients and the threshold are settings (`/api/settings/alerts`).
 
 ## Data
 
-Postgres (13+), plain SQL migrations in `apps/hall-api/migrations`, applied at start (or `hall
+Postgres (13+; tested on 16 and 18), plain SQL migrations in `apps/hall-api/migrations`, applied at start (or `hall
 migrate`) in order, each in a transaction, under an advisory lock, with a checksum so an applied
 migration cannot change silently.
 

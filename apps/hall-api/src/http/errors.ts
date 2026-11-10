@@ -49,10 +49,11 @@ export const invalid = (what: string, err: z.ZodError) =>
     issues: issuesOf(err),
   });
 
-/** Postgres errors the API turns into answers: unique (409) and foreign key (409 in-use) violations. */
+/** Postgres errors the API turns into answers: unique (409), foreign key or restrict (409 in-use), check (422) violations. */
 function fromPg(err: { code?: string; constraint?: string; table?: string }): HttpError | undefined {
   if (err.code === '23505') return new HttpError(409, 'conflict', `already exists (${err.constraint ?? 'unique'})`);
-  if (err.code === '23503') return new HttpError(409, 'in-use', `still referenced (${err.constraint ?? 'foreign key'})`, { hint: 'remove what refers to it first' });
+  // 23503 foreign_key_violation; 23001 restrict_violation (ON DELETE RESTRICT from Postgres 18 on).
+  if (err.code === '23503' || err.code === '23001') return new HttpError(409, 'in-use', `still referenced (${err.constraint ?? 'foreign key'})`, { hint: 'remove what refers to it first' });
   if (err.code === '23514') return new HttpError(422, 'invalid', `refused by a check (${err.constraint ?? 'check'})`);
   return undefined;
 }
