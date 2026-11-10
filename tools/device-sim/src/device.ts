@@ -36,6 +36,8 @@ export interface SimProfile {
   siteName: string | undefined;
   chargers: number;
   controlMode: v1.ControlMode;
+  /** Sent as X-Forwarded-For: the address a reverse proxy in front of Hall would report (demo). */
+  forwardedFor?: string;
 }
 
 export interface SendOptions {
@@ -119,7 +121,12 @@ export class SimDevice {
     const headers = signRequest(this.keys.privateKey, { method: 'POST', path, timestamp: opts.timestamp ?? this.nowS(), nonce, body: text, keyId });
     const res = await fetch(this.baseUrl + path, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'user-agent': `hall-device-sim/${this.profile.version}`, ...headers },
+      headers: {
+        'content-type': 'application/json',
+        'user-agent': `hall-device-sim/${this.profile.version}`,
+        ...(this.profile.forwardedFor ? { 'x-forwarded-for': this.profile.forwardedFor } : {}),
+        ...headers,
+      },
       body: opts.sendBody ?? text,
     });
     const answer: Answer<T> = { status: res.status, body: (await res.json().catch(() => null)) as T & Partial<v1.DeviceError> };

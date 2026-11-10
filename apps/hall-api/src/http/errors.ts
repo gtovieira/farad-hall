@@ -73,7 +73,16 @@ export function installErrorHandler(app: FastifyInstance): void {
     const body: Record<string, unknown> = { error: e.code, message: e.message, ...e.extra };
     void reply.code(e.status).send(body);
   });
+}
+
+/**
+ * Unknown paths: a JSON 404. With the web UI, a GET outside /api that names no file (no extension:
+ * /devices/…) is the app, for its client-side routes; a missing file stays a 404.
+ */
+export function installNotFound(app: FastifyInstance, spa: boolean): void {
   app.setNotFoundHandler((req, reply) => {
-    void reply.code(404).send({ error: 'not-found', message: `${req.method} ${req.url} not found` });
+    const path = req.url.split('?')[0]!;
+    if (spa && req.method === 'GET' && !path.startsWith('/api/') && !/\.[A-Za-z0-9]+$/.test(path)) return reply.type('text/html').sendFile('index.html');
+    return reply.code(404).send({ error: 'not-found', message: `${req.method} ${req.url} not found` });
   });
 }

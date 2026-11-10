@@ -16,7 +16,7 @@ import type { Deps } from './context.js';
 import { Db, migrate } from './db.js';
 import { deviceAuthenticator } from './device/auth.js';
 import { deviceRoutes } from './device/ingest.js';
-import { installErrorHandler } from './http/errors.js';
+import { installErrorHandler, installNotFound } from './http/errors.js';
 import { registerRoutes, type AnyRoute } from './http/route.js';
 import { startJobs } from './jobs.js';
 import { apiDocument } from './openapi.js';
@@ -101,14 +101,9 @@ export async function buildHall(opts: BuildOptions): Promise<Hall> {
   const routes = allRoutes(contract);
   registerRoutes(app, routes, deps, { session: sessionAuthenticator(deps), device: deviceAuthenticator(deps), permit });
 
-  if (config.webDir && existsSync(join(config.webDir, 'index.html'))) {
-    await app.register(fastifyStatic, { root: config.webDir, wildcard: false, index: ['index.html'] });
-    // Client-side routes: any GET outside /api that is not a file is the app.
-    app.setNotFoundHandler((req, reply) => {
-      if (req.method === 'GET' && !req.url.startsWith('/api/')) return reply.type('text/html').sendFile('index.html');
-      return reply.code(404).send({ error: 'not-found', message: `${req.method} ${req.url} not found` });
-    });
-  }
+  const spa = Boolean(config.webDir && existsSync(join(config.webDir, 'index.html')));
+  if (spa) await app.register(fastifyStatic, { root: config.webDir!, index: ['index.html'] });
+  installNotFound(app, spa);
 
   if (config.migrate) await migrate(db);
   if (config.admin) await bootstrapAdmin(deps, config.admin.email, config.admin.password);

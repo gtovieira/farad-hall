@@ -1,0 +1,22 @@
+:root{
+/* brand core */
+--volt:#FFD400;--volt-press:#E6BF00;--volt-glow:rgba(255,212,0,.16);
+--ink:#0D0D0B;--paper:#F5F4EF;--on-volt:#0D0D0B;
+/* surfaces (dark-first) */
+--surface-0:#0D0D0B;--surface-1:#161613;--surface-2:#1C1C18;--surface-3:#232320;
+--line-1:#2A2A24;--line-2:#3A3A32;
+/* text */
+--text-1:#F5F4EF;--text-2:#C9C8C0;--text-3:#9A9A90;--text-4:#6E6E64;
+/* semantic */
+--ok:#35D07F;--ok-bg:#152A1C;--warn:#FF9F1C;--warn-bg:#2C2110;--err:#FF5A3C;--err-bg:#2E1511;
+/* aliases */
+--accent:var(--volt);--text-strong:var(--text-1);--text-body:var(--text-2);--text-muted:var(--text-3);
+--surface-page:var(--surface-0);--surface-card:var(--surface-1);--surface-raised:var(--surface-2);
+--border-default:var(--line-1);--border-strong:var(--line-2);
+/* charger status */
+--status-available:var(--ok);--status-charging:var(--volt);--status-faulted:var(--err);--status-offline:var(--text-4);
+/* Additions (not in the zip): values the components hard-coded, and the accent as text, as tokens a
+ * theme can set (packages/gauss-theme). Farad's values are unchanged. */
+--volt-bg:#2B2712;--accent-text:var(--volt);--err-press:#E04527;--on-err:#FFF6F4;--scrim:rgba(13,13,11,.7);
+--status-available-bg:var(--ok-bg);--status-charging-bg:var(--volt-bg);--status-faulted-bg:var(--err-bg);--status-offline-bg:var(--surface-2);
+}

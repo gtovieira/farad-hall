@@ -1,0 +1,28 @@
+/* Global base for Farad apps: page background, type defaults, focus ring and the
+ * dense operator table (.ftable) from ui_kits/console/index.html. */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--surface-0);color:var(--text-2);font-family:var(--font-body);font-size:var(--text-md);line-height:1.45;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,p{margin:0}
+a{color:var(--accent-text);text-decoration:none}
+a:hover{color:var(--text-1)}
+:focus{outline:none}
+:focus-visible{box-shadow:var(--focus-ring);outline:none}
+::selection{background:var(--volt);color:var(--on-volt)}
+.ftable{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-3);font-variant-numeric:tabular-nums}
+.ftable th{text-align:left;font-weight:500;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-4);padding:var(--sp-2) 14px;border-bottom:1px solid var(--line-1);white-space:nowrap}
+.ftable td{padding:10px 14px;border-bottom:1px solid var(--line-1)}
+.ftable tbody tr:last-child td{border-bottom:none}
+.ftable tbody tr:hover{background:var(--surface-2)}
+.ftable tbody tr[data-clickable]{cursor:pointer}
+.ftable .num{text-align:right}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+/* Phones: a Dialog is a bottom sheet, full width and at most the screen tall. Only its body
+ * scrolls (Dialog), so the title and the actions stay in view; the actions share the width. */
+@media (max-width:600px){
+.fds-dialog-scrim{align-items:flex-end!important}
+.fds-dialog{width:100%!important;max-width:100%!important;max-height:calc(100vh - 24px)!important;max-height:calc(100dvh - 24px)!important;border-radius:var(--radius-2) var(--radius-2) 0 0!important;border-bottom:none!important;padding-bottom:env(safe-area-inset-bottom)}
+.fds-dialog-body{padding:16px 20px!important}
+.fds-dialog-actions{flex-wrap:wrap;padding-top:12px!important;border-top:1px solid var(--line-1)}
+.fds-dialog-actions>*{flex:1 1 0}
+}

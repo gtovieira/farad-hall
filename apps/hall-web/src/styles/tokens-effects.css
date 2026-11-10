@@ -1,0 +1,8 @@
+:root{
+--shadow-1:0 1px 0 rgba(0,0,0,.4),0 2px 10px rgba(0,0,0,.35);
+--shadow-2:0 12px 40px rgba(0,0,0,.55);
+--focus-ring:0 0 0 2px var(--surface-0),0 0 0 4px var(--volt);
+--ease-snap:cubic-bezier(.2,0,0,1);/* @kind other */
+--dur-fast:120ms;/* @kind other */
+--dur-med:200ms;/* @kind other */
+}

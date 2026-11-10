@@ -1,0 +1,20 @@
+:root{
+--font-display:"Archivo Variable","Archivo",system-ui,sans-serif;
+--font-body:"Archivo Variable","Archivo",system-ui,sans-serif;
+--font-mono:"IBM Plex Mono",ui-monospace,monospace;
+/* The product's name (ORQUESTRA) beside the wordmark: Inter Thin (100), upper case */
+--font-product:"Inter",system-ui,sans-serif;
+/* Archivo is variable: width + weight axes */
+--vs-display:'wdth' 118,'wght' 900;/* @kind font */
+--vs-heading:'wdth' 110,'wght' 800;/* @kind font */
+--vs-button:'wdth' 110,'wght' 700;/* @kind font */
+--text-2xs:11px;--text-xs:12px;--text-sm:13px;--text-md:14px;--text-lg:16px;--text-xl:20px;--text-2xl:26px;--text-3xl:34px;--text-4xl:44px;--text-5xl:64px;
+--tracking-caps:.14em;
+/* Not set here, on purpose: a theme's label and readout weights (packages/gauss-theme); unset,
+ * labels and readouts keep the weight they inherit. --case-button: the buttons' text-transform
+ * (unset: uppercase). */
+}
+.t-display{font-family:var(--font-display);font-variation-settings:var(--vs-display);text-transform:uppercase;line-height:1.02;letter-spacing:.01em}
+.t-heading{font-family:var(--font-display);font-variation-settings:var(--vs-heading);line-height:1.12}
+.t-label{font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:var(--tracking-caps);text-transform:uppercase}
+.t-data{font-family:var(--font-mono);font-variant-numeric:tabular-nums}

@@ -1,0 +1,8 @@
+/* Self-hosted webfonts (copied from the Farad design system): Archivo (variable, width and weight
+ * axes) for display type, IBM Plex Mono for labels and numbers, Inter Thin (100) only for the
+ * product's name (HALL) beside FARAD. */
+@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+@import "@fontsource/inter/100.css";

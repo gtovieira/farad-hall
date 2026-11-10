@@ -1,0 +1,27 @@
+{
+  "name": "@hall/web",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Farad Hall web UI: sign-in, the fleet, each device, customers and sites, claim codes, alerts. pt-BR by default, English available.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@fontsource-variable/archivo": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "jsdom": "^26.1.0",
+    "vite": "^7.3.0"
+  }
+}
