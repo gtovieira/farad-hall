@@ -251,21 +251,27 @@ export class SimDevice {
     let lastMode = this.profile.controlMode;
     while (!o.signal.aborted) {
       try {
-        o.onAnswer?.('heartbeat', await this.heartbeat());
+        // Sent first: `o.onAnswer?.(…, await …)` would skip the request when there is no onAnswer.
+        const hb = await this.heartbeat();
+        o.onAnswer?.('heartbeat', hb);
         if (Date.now() - lastState >= o.stateS * 1000 || lastMode !== this.profile.controlMode) {
-          o.onAnswer?.('state', await this.state());
+          const st = await this.state();
+          o.onAnswer?.('state', st);
           lastState = Date.now();
           lastMode = this.profile.controlMode;
         }
       } catch (err) {
         o.onError?.(err as Error);
       }
+      if (o.signal.aborted) break;
       await new Promise<void>((resolve) => {
-        const t = setTimeout(resolve, o.heartbeatS * 1000);
-        o.signal.addEventListener('abort', () => {
+        const done = () => {
           clearTimeout(t);
+          o.signal.removeEventListener('abort', done);
           resolve();
-        }, { once: true });
+        };
+        const t = setTimeout(done, o.heartbeatS * 1000);
+        o.signal.addEventListener('abort', done, { once: true });
       });
     }
   }
