@@ -1,0 +1,40 @@
+{
+  "name": "@hall/api",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Farad Hall API: users, customers and sites, devices and their telemetry, alerts, audit.",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "hall": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch --conditions=source src/main.ts",
+    "start": "node dist/main.js",
+    "openapi": "tsx --conditions=source src/cli.ts openapi"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/static": "^8.3.0",
+    "@hall/openapi": "workspace:*",
+    "@hall/protocol": "workspace:*",
+    "fastify": "^5.6.0",
+    "nodemailer": "^7.0.10",
+    "pg": "^8.23.1",
+    "zod": "^4.6.0"
+  },
+  "devDependencies": {
+    "@hall/device-sim": "workspace:*",
+    "@hall/test-support": "workspace:*",
+    "@types/nodemailer": "^7.0.0",
+    "@types/pg": "^8.15.0"
+  }
+}

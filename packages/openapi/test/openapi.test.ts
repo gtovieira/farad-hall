@@ -45,7 +45,8 @@ describe('buildOpenApi', () => {
     const s = doc.components.schemas;
     expect(s.Address.required).toEqual(['city', 'uf']);
     expect(s.AddressInput.required).toEqual(['city']);
-    expect(s.PostSitesRequest).toBeDefined();
+    // Only the request model of a request body is kept: its answer twin is used nowhere.
+    expect(s.PostSitesRequest).toBeUndefined();
     expect(doc.paths['/api/sites'].post.requestBody.content['application/json'].schema.$ref).toBe('#/components/schemas/PostSitesRequestInput');
     expect(s.PostSitesRequestInput.properties.address.$ref).toBe('#/components/schemas/AddressInput');
     expect(s.Site.properties.address.$ref).toBe('#/components/schemas/Address');

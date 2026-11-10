@@ -1,0 +1,25 @@
+{
+  "name": "@hall/device-sim",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "A simulated Orquestra hall-agent: enrols with a claim code, then sends heartbeats, state and events, signed.",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "hall-device-sim": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "sim": "tsx --conditions=source src/cli.ts"
+  },
+  "dependencies": {
+    "@hall/protocol": "workspace:*"
+  }
+}

@@ -284,7 +284,7 @@ export function buildOpenApi(doc: DocumentDoc): Json {
     paths[path] = { ...(paths[path] ?? {}), [op.method.toLowerCase()]: operation };
   }
   const sortedPaths = Object.fromEntries(Object.entries(paths).sort(([a], [b]) => a.localeCompare(b)));
-  // Keep only the request models a request uses (directly or through another request model).
+  // What the paths refer to, directly or through another component.
   const used = new Set<string>();
   const visit = (value: unknown) => {
     for (const ref of collectRawRefs(value, new Set())) {
@@ -294,7 +294,8 @@ export function buildOpenApi(doc: DocumentDoc): Json {
     }
   };
   visit(paths);
-  for (const name of Object.keys(schemas)) if (name.endsWith('Input') && names.byName.has(name.slice(0, -5)) && !used.has(name)) delete schemas[name];
+  // Components are what the paths use: a request model's answer twin, or a name no route uses, goes.
+  for (const name of Object.keys(schemas)) if (!used.has(name)) delete schemas[name];
 
   return {
     openapi: '3.1.0',
