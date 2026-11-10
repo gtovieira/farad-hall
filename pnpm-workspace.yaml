@@ -1,0 +1,9 @@
+packages:
+  - packages/*
+  - apps/*
+  - tools/*
+
+# esbuild (vite's bundler) ships its platform binary as an optional dependency: its install
+# script only checks it, so it is skipped.
+ignoredBuiltDependencies:
+  - esbuild

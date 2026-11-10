@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+.env
+deploy/.env
+deploy/backups/
+.demo/
+.device-sim/
+*.log

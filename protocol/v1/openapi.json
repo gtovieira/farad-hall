@@ -1,0 +1,1291 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Farad Hall protocol",
+    "version": "1.0.0",
+    "description": "The contract between Farad Hall and the Orquestra's hall-agent: enrolment, heartbeat, state and events, each signed with the device's Ed25519 key. Messages carry protocolVersion; Hall accepts versions 1."
+  },
+  "tags": [
+    {
+      "name": "device",
+      "description": "Messages from an Orquestra to Hall"
+    }
+  ],
+  "paths": {
+    "/api/device/enrol": {
+      "post": {
+        "operationId": "enrol",
+        "summary": "Enrol: a claim code and a new public key become a device of a site",
+        "description": "The device generates its Ed25519 key pair, then sends the claim code an admin created in Hall with its public key, signed with that key (Hall-Device absent; the canonical string ends in \"enrol\"). A claim code is single use and lives 24 h.",
+        "tags": [
+          "device"
+        ],
+        "parameters": [
+          {
+            "name": "Hall-Timestamp",
+            "in": "header",
+            "required": true,
+            "description": "Unix seconds; within 300 s of Hall's clock",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Hall-Nonce",
+            "in": "header",
+            "required": true,
+            "description": "Unique per request (16–128 of A–Z a–z 0–9 _ -); Hall refuses one seen within 600 s",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Hall-Signature",
+            "in": "header",
+            "required": true,
+            "description": "Ed25519 signature (base64url, 64 bytes) of the HALL-ED25519-V1 canonical string",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrolRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Enrolled: keep the deviceId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrolResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Signature missing or wrong (unauthorized, bad-signature), stale timestamp (stale-timestamp, with serverTime), replayed nonce (replayed-nonce), unknown device (unknown-device)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such claim code (claim-code-invalid)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "This public key is already enrolled (already-enrolled)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The claim code expired (claim-code-expired) or was used (claim-code-used): ask for a new one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body too large (1 MiB)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid message (invalid, with issues), or a protocol version Hall does not accept (unsupported-protocol, with supportedVersions)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many failed attempts from this address (rate-limited)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "hallSignature": []
+          }
+        ]
+      }
+    },
+    "/api/device/events": {
+      "post": {
+        "operationId": "events",
+        "summary": "Warning and critical events (idempotent by event id)",
+        "tags": [
+          "device"
+        ],
+        "parameters": [
+          {
+            "name": "Hall-Device",
+            "in": "header",
+            "required": true,
+            "description": "The device id Hall gave at enrolment",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Hall-Timestamp",
+            "in": "header",
+            "required": true,
+            "description": "Unix seconds; within 300 s of Hall's clock",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Hall-Nonce",
+            "in": "header",
+            "required": true,
+            "description": "Unique per request (16–128 of A–Z a–z 0–9 _ -); Hall refuses one seen within 600 s",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Hall-Signature",
+            "in": "header",
+            "required": true,
+            "description": "Ed25519 signature (base64url, 64 bytes) of the HALL-ED25519-V1 canonical string",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventBatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ack"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Signature missing or wrong (unauthorized, bad-signature), stale timestamp (stale-timestamp, with serverTime), replayed nonce (replayed-nonce), unknown device (unknown-device)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The device is revoked (device-revoked): stop sending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body too large (1 MiB)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid message (invalid, with issues), or a protocol version Hall does not accept (unsupported-protocol, with supportedVersions)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "hallSignature": []
+          }
+        ]
+      }
+    },
+    "/api/device/heartbeat": {
+      "post": {
+        "operationId": "heartbeat",
+        "summary": "Presence: version, uptime, LAN IP, image",
+        "tags": [
+          "device"
+        ],
+        "parameters": [
+          {
+            "name": "Hall-Device",
+            "in": "header",
+            "required": true,
+            "description": "The device id Hall gave at enrolment",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Hall-Timestamp",
+            "in": "header",
+            "required": true,
+            "description": "Unix seconds; within 300 s of Hall's clock",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Hall-Nonce",
+            "in": "header",
+            "required": true,
+            "description": "Unique per request (16–128 of A–Z a–z 0–9 _ -); Hall refuses one seen within 600 s",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Hall-Signature",
+            "in": "header",
+            "required": true,
+            "description": "Ed25519 signature (base64url, 64 bytes) of the HALL-ED25519-V1 canonical string",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Heartbeat"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ack"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Signature missing or wrong (unauthorized, bad-signature), stale timestamp (stale-timestamp, with serverTime), replayed nonce (replayed-nonce), unknown device (unknown-device)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The device is revoked (device-revoked): stop sending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body too large (1 MiB)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid message (invalid, with issues), or a protocol version Hall does not accept (unsupported-protocol, with supportedVersions)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "hallSignature": []
+          }
+        ]
+      }
+    },
+    "/api/device/state": {
+      "post": {
+        "operationId": "state",
+        "summary": "Health, resources, control mode and chargers",
+        "tags": [
+          "device"
+        ],
+        "parameters": [
+          {
+            "name": "Hall-Device",
+            "in": "header",
+            "required": true,
+            "description": "The device id Hall gave at enrolment",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Hall-Timestamp",
+            "in": "header",
+            "required": true,
+            "description": "Unix seconds; within 300 s of Hall's clock",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Hall-Nonce",
+            "in": "header",
+            "required": true,
+            "description": "Unique per request (16–128 of A–Z a–z 0–9 _ -); Hall refuses one seen within 600 s",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Hall-Signature",
+            "in": "header",
+            "required": true,
+            "description": "Ed25519 signature (base64url, 64 bytes) of the HALL-ED25519-V1 canonical string",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceState"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ack"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Signature missing or wrong (unauthorized, bad-signature), stale timestamp (stale-timestamp, with serverTime), replayed nonce (replayed-nonce), unknown device (unknown-device)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The device is revoked (device-revoked): stop sending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body too large (1 MiB)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid message (invalid, with issues), or a protocol version Hall does not accept (unsupported-protocol, with supportedVersions)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "hallSignature": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Ack": {
+        "type": "object",
+        "properties": {
+          "protocolVersion": {
+            "type": "integer",
+            "description": "The protocol version Hall accepted the message in"
+          },
+          "accepted": {
+            "type": "boolean",
+            "const": true
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Hall's clock when it took the message: the agent corrects its clock offset with it"
+          },
+          "publicIp": {
+            "description": "The address Hall saw the request come from (heartbeat)",
+            "$ref": "#/components/schemas/IpAddress"
+          },
+          "events": {
+            "type": "object",
+            "properties": {
+              "accepted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "duplicates": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Events Hall already had (same id): not stored again"
+              }
+            },
+            "required": [
+              "accepted",
+              "duplicates"
+            ]
+          },
+          "intervals": {
+            "description": "When Hall wants other intervals from now on",
+            "$ref": "#/components/schemas/Intervals"
+          }
+        },
+        "required": [
+          "protocolVersion",
+          "accepted",
+          "receivedAt"
+        ],
+        "description": "Hall's acknowledgement: the message is stored. Anything but a 2xx means: keep it and send it again later."
+      },
+      "ChargerState": {
+        "type": "object",
+        "properties": {
+          "chargerId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "online": {
+            "type": "boolean",
+            "description": "Its OCPP connection is open"
+          },
+          "vendor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "firmware": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "connectors": {
+            "maxItems": 64,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConnectorState"
+            }
+          }
+        },
+        "required": [
+          "chargerId",
+          "online",
+          "connectors"
+        ]
+      },
+      "ConnectorState": {
+        "type": "object",
+        "properties": {
+          "connectorId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 64
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConnectorStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The last StatusNotification; null when it never sent one"
+          },
+          "errorCode": {
+            "description": "The OCPP error code, when not NoError",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "connectorId",
+          "status"
+        ]
+      },
+      "ConnectorStatus": {
+        "type": "string",
+        "enum": [
+          "Available",
+          "Preparing",
+          "Charging",
+          "SuspendedEVSE",
+          "SuspendedEV",
+          "Finishing",
+          "Reserved",
+          "Unavailable",
+          "Faulted"
+        ]
+      },
+      "ControlMode": {
+        "type": "string",
+        "enum": [
+          "normal",
+          "fallback-analyzer",
+          "fallback-error",
+          "no-settings"
+        ],
+        "description": "normal; fallback-analyzer (main meter lost: floors only); fallback-error (control degraded); no-settings (site not configured: floors only)"
+      },
+      "ControlState": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/ControlMode"
+          },
+          "since": {
+            "description": "When the current mode began",
+            "type": "string",
+            "format": "date-time"
+          },
+          "mainMeterOnline": {
+            "type": "boolean"
+          },
+          "invariant": {
+            "description": "The fallback invariant (floors fit under the limit)",
+            "type": "string",
+            "enum": [
+              "ok",
+              "violated",
+              "unverified"
+            ]
+          },
+          "activeSessions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pausedSessions": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "mode",
+          "mainMeterOnline"
+        ]
+      },
+      "DeviceError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeviceErrorCode"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "A machine code (DeviceErrorCode); the set may grow"
+          },
+          "message": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "serverTime": {
+            "description": "Hall's clock, on a stale-timestamp: correct the offset and send again",
+            "type": "string",
+            "format": "date-time"
+          },
+          "supportedVersions": {
+            "description": "On unsupported-protocol: the versions Hall accepts",
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "message"
+              ]
+            }
+          }
+        },
+        "required": [
+          "error",
+          "message"
+        ]
+      },
+      "DeviceErrorCode": {
+        "type": "string",
+        "enum": [
+          "invalid",
+          "bad-request",
+          "unsupported-protocol",
+          "unauthorized",
+          "bad-signature",
+          "stale-timestamp",
+          "replayed-nonce",
+          "unknown-device",
+          "device-revoked",
+          "claim-code-invalid",
+          "claim-code-expired",
+          "claim-code-used",
+          "already-enrolled",
+          "rate-limited",
+          "internal"
+        ]
+      },
+      "DeviceEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The Orquestra's event id (a uuid): Hall keeps one copy per id, so a batch may be sent again"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO-8601 time, UTC or with an offset, e.g. 2026-11-10T14:03:00.000Z"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The service that raised it, e.g. control-engine"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The Orquestra's EventKind, e.g. fallback-entered (open: new kinds need no new protocol version)"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/EventSeverity"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "chargerId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "connectorId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 64
+          },
+          "meterId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "data": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "id",
+          "timestamp",
+          "source",
+          "kind",
+          "severity",
+          "message"
+        ]
+      },
+      "DeviceInfo": {
+        "type": "object",
+        "properties": {
+          "orquestraVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The Orquestra's software version (FARAD_VERSION), e.g. v1.4.0"
+          },
+          "apiVersion": {
+            "description": "The Orquestra's local API version, e.g. 1.1.0",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "imageDigest": {
+            "$ref": "#/components/schemas/ImageDigest"
+          },
+          "hostname": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "serial": {
+            "description": "The board's serial number, when it has one",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "model": {
+            "description": "The board, e.g. Raspberry Pi 5 Model B Rev 1.0",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "siteName": {
+            "description": "The site's name set in the Orquestra (Settings › Site)",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "orquestraVersion"
+        ],
+        "description": "What the device says about itself when it enrols"
+      },
+      "DeviceState": {
+        "type": "object",
+        "properties": {
+          "protocolVersion": {
+            "type": "integer",
+            "const": 1,
+            "description": "The protocol version this message is written in"
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO-8601 time, UTC or with an offset, e.g. 2026-11-10T14:03:00.000Z"
+          },
+          "health": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "boolean",
+                "description": "Every service is healthy"
+              },
+              "services": {
+                "maxItems": 64,
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ServiceHealth"
+                }
+              }
+            },
+            "required": [
+              "ok",
+              "services"
+            ]
+          },
+          "resources": {
+            "$ref": "#/components/schemas/Resources"
+          },
+          "control": {
+            "$ref": "#/components/schemas/ControlState"
+          },
+          "chargers": {
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargerState"
+            }
+          }
+        },
+        "required": [
+          "protocolVersion",
+          "sentAt",
+          "health",
+          "resources",
+          "control",
+          "chargers"
+        ],
+        "description": "Health, resources, control and chargers: every 5 minutes, and at once when the control mode changes"
+      },
+      "EnrolRequest": {
+        "type": "object",
+        "properties": {
+          "protocolVersion": {
+            "type": "integer",
+            "const": 1,
+            "description": "The protocol version this message is written in"
+          },
+          "claimCode": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 20,
+            "description": "The claim code an admin created in Hall, e.g. K7QM-4TZP (case, dashes and spaces are ignored)"
+          },
+          "publicKey": {
+            "$ref": "#/components/schemas/PublicKey"
+          },
+          "device": {
+            "$ref": "#/components/schemas/DeviceInfo"
+          }
+        },
+        "required": [
+          "protocolVersion",
+          "claimCode",
+          "publicKey",
+          "device"
+        ],
+        "description": "Enrolment: the device presents a claim code and the public key it generated. The request is signed with that key."
+      },
+      "EnrolResponse": {
+        "type": "object",
+        "properties": {
+          "protocolVersion": {
+            "type": "integer",
+            "description": "The protocol version Hall accepted the request in, and answers in"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "The device's identity in Hall: the Hall-Device header of every later request"
+          },
+          "site": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "enrolledAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO-8601 time, UTC or with an offset, e.g. 2026-11-10T14:03:00.000Z"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO-8601 time, UTC or with an offset, e.g. 2026-11-10T14:03:00.000Z"
+          },
+          "intervals": {
+            "$ref": "#/components/schemas/Intervals"
+          }
+        },
+        "required": [
+          "protocolVersion",
+          "deviceId",
+          "site",
+          "customer",
+          "enrolledAt",
+          "serverTime",
+          "intervals"
+        ]
+      },
+      "EventBatch": {
+        "type": "object",
+        "properties": {
+          "protocolVersion": {
+            "type": "integer",
+            "const": 1,
+            "description": "The protocol version this message is written in"
+          },
+          "events": {
+            "minItems": 1,
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceEvent"
+            }
+          }
+        },
+        "required": [
+          "protocolVersion",
+          "events"
+        ],
+        "description": "The Orquestra's warning and critical events, as they happen; what could not be sent, later, oldest first"
+      },
+      "EventSeverity": {
+        "type": "string",
+        "enum": [
+          "warning",
+          "critical"
+        ]
+      },
+      "Heartbeat": {
+        "type": "object",
+        "properties": {
+          "protocolVersion": {
+            "type": "integer",
+            "const": 1,
+            "description": "The protocol version this message is written in"
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The device's clock when it sent this"
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The Orquestra's software version (FARAD_VERSION)"
+          },
+          "uptimeS": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds since the device's boot"
+          },
+          "lanIp": {
+            "description": "The device's address on the site LAN",
+            "$ref": "#/components/schemas/IpAddress"
+          },
+          "imageDigest": {
+            "$ref": "#/components/schemas/ImageDigest"
+          },
+          "apiVersion": {
+            "description": "The Orquestra's local API version",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          }
+        },
+        "required": [
+          "protocolVersion",
+          "sentAt",
+          "version",
+          "uptimeS"
+        ],
+        "description": "Presence, every minute. Hall records the public IP it sees the request come from."
+      },
+      "ImageDigest": {
+        "type": "string",
+        "pattern": "^sha256:[a-f0-9]{64}$",
+        "description": "The running image digest, sha256:<64 hex>"
+      },
+      "Intervals": {
+        "type": "object",
+        "properties": {
+          "heartbeatS": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 3600,
+            "description": "Send a heartbeat this often (seconds)"
+          },
+          "stateS": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 3600,
+            "description": "Send the state this often (seconds), and on a change of control mode"
+          }
+        },
+        "required": [
+          "heartbeatS",
+          "stateS"
+        ],
+        "description": "How often Hall wants each message"
+      },
+      "IpAddress": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "ipv4",
+            "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
+          },
+          {
+            "type": "string",
+            "format": "ipv6",
+            "pattern": "^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))$"
+          }
+        ],
+        "description": "An IPv4 or IPv6 address"
+      },
+      "PublicKey": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_-]{43}$",
+        "description": "Ed25519 public key: the 32 raw bytes, base64url without padding (the JWK \"x\" value)"
+      },
+      "Resources": {
+        "type": "object",
+        "properties": {
+          "cpuPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "memPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "memTotalMb": {
+            "type": "number",
+            "minimum": 0
+          },
+          "diskPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Use of the data disk"
+          },
+          "diskFreeGb": {
+            "type": "number",
+            "minimum": 0
+          },
+          "temperatureC": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": -60,
+                "maximum": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The SoC temperature; null when the board has no sensor"
+          },
+          "loadAvg1": {
+            "type": "number",
+            "minimum": 0
+          },
+          "watchdogResets": {
+            "description": "Hardware watchdog resets since installation",
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "cpuPct",
+          "memPct",
+          "diskPct",
+          "temperatureC"
+        ]
+      },
+      "ServiceHealth": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The service, e.g. control-engine"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "status": {
+            "description": "Docker's state, e.g. healthy, unhealthy, restarting",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "restarts": {
+            "description": "Restarts since the device booted",
+            "type": "integer",
+            "minimum": 0
+          },
+          "detail": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "name",
+          "ok"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "hallSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Hall-Signature",
+        "description": "Ed25519 request signature (HALL-ED25519-V1). The device signs the UTF-8 bytes of\n\n    HALL-ED25519-V1\\n<METHOD>\\n<path and query>\\n<Hall-Timestamp>\\n<Hall-Nonce>\\n<lower-case hex SHA-256 of the body bytes>\\n<Hall-Device, or \"enrol\">\n\nwith the private key it generated, and sends the signature in Hall-Signature (base64url, no padding), with the hall-device, hall-timestamp and hall-nonce headers. See protocol/v1/README.md and test-vectors.json."
+      }
+    }
+  },
+  "x-hall-protocol-version": 1,
+  "x-hall-supported-versions": [
+    1
+  ]
+}

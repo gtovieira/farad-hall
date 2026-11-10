@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:farad:hall:protocol:v1:enrol-request",
+  "title": "enrol-request",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "The protocol version this message is written in"
+    },
+    "claimCode": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 20,
+      "description": "The claim code an admin created in Hall, e.g. K7QM-4TZP (case, dashes and spaces are ignored)"
+    },
+    "publicKey": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{43}$",
+      "description": "Ed25519 public key: the 32 raw bytes, base64url without padding (the JWK \"x\" value)"
+    },
+    "device": {
+      "type": "object",
+      "properties": {
+        "orquestraVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "The Orquestra's software version (FARAD_VERSION), e.g. v1.4.0"
+        },
+        "apiVersion": {
+          "description": "The Orquestra's local API version, e.g. 1.1.0",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "imageDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "The running image digest, sha256:<64 hex>"
+        },
+        "hostname": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "serial": {
+          "description": "The board's serial number, when it has one",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "model": {
+          "description": "The board, e.g. Raspberry Pi 5 Model B Rev 1.0",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "siteName": {
+          "description": "The site's name set in the Orquestra (Settings › Site)",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "orquestraVersion"
+      ],
+      "description": "What the device says about itself when it enrols"
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "claimCode",
+    "publicKey",
+    "device"
+  ],
+  "description": "Enrolment: the device presents a claim code and the public key it generated. The request is signed with that key."
+}

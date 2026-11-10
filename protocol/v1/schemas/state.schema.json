@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:farad:hall:protocol:v1:state",
+  "title": "state",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "The protocol version this message is written in"
+    },
+    "sentAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 time, UTC or with an offset, e.g. 2026-11-10T14:03:00.000Z"
+    },
+    "health": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "description": "Every service is healthy"
+        },
+        "services": {
+          "maxItems": 64,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "The service, e.g. control-engine"
+              },
+              "ok": {
+                "type": "boolean"
+              },
+              "status": {
+                "description": "Docker's state, e.g. healthy, unhealthy, restarting",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "restarts": {
+                "description": "Restarts since the device booted",
+                "type": "integer",
+                "minimum": 0
+              },
+              "detail": {
+                "type": "string",
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "name",
+              "ok"
+            ]
+          }
+        }
+      },
+      "required": [
+        "ok",
+        "services"
+      ]
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "cpuPct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "memPct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "memTotalMb": {
+          "type": "number",
+          "minimum": 0
+        },
+        "diskPct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Use of the data disk"
+        },
+        "diskFreeGb": {
+          "type": "number",
+          "minimum": 0
+        },
+        "temperatureC": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": -60,
+              "maximum": 200
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The SoC temperature; null when the board has no sensor"
+        },
+        "loadAvg1": {
+          "type": "number",
+          "minimum": 0
+        },
+        "watchdogResets": {
+          "description": "Hardware watchdog resets since installation",
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "cpuPct",
+        "memPct",
+        "diskPct",
+        "temperatureC"
+      ]
+    },
+    "control": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "normal",
+            "fallback-analyzer",
+            "fallback-error",
+            "no-settings"
+          ],
+          "description": "normal; fallback-analyzer (main meter lost: floors only); fallback-error (control degraded); no-settings (site not configured: floors only)"
+        },
+        "since": {
+          "description": "When the current mode began",
+          "type": "string",
+          "format": "date-time"
+        },
+        "mainMeterOnline": {
+          "type": "boolean"
+        },
+        "invariant": {
+          "description": "The fallback invariant (floors fit under the limit)",
+          "type": "string",
+          "enum": [
+            "ok",
+            "violated",
+            "unverified"
+          ]
+        },
+        "activeSessions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pausedSessions": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "mode",
+        "mainMeterOnline"
+      ]
+    },
+    "chargers": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "chargerId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "online": {
+            "type": "boolean",
+            "description": "Its OCPP connection is open"
+          },
+          "vendor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "firmware": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "connectors": {
+            "maxItems": 64,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "connectorId": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 64
+                },
+                "status": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "Available",
+                        "Preparing",
+                        "Charging",
+                        "SuspendedEVSE",
+                        "SuspendedEV",
+                        "Finishing",
+                        "Reserved",
+                        "Unavailable",
+                        "Faulted"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The last StatusNotification; null when it never sent one"
+                },
+                "errorCode": {
+                  "description": "The OCPP error code, when not NoError",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "connectorId",
+                "status"
+              ]
+            }
+          }
+        },
+        "required": [
+          "chargerId",
+          "online",
+          "connectors"
+        ]
+      }
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "sentAt",
+    "health",
+    "resources",
+    "control",
+    "chargers"
+  ],
+  "description": "Health, resources, control and chargers: every 5 minutes, and at once when the control mode changes"
+}

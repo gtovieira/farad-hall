@@ -1,0 +1,24 @@
+{
+  "name": "@hall/test-support",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Real infrastructure for tests and the demo: a private Postgres per run, free ports, polling.",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.0"
+  }
+}

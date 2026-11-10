@@ -1,0 +1,41 @@
+{
+  "description": "Ed25519 signing test vectors for the Hall protocol. privateKeySeedHex is the 32-byte seed (RFC 8032 test 1). Each case: sign canonicalString (UTF-8) and compare with headers[\"hall-signature\"].",
+  "scheme": "HALL-ED25519-V1",
+  "privateKeySeedHex": "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+  "publicKey": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
+  "cases": [
+    {
+      "name": "heartbeat",
+      "method": "POST",
+      "path": "/api/device/heartbeat",
+      "timestamp": 1762783200,
+      "nonce": "q8Xl2oQ0b8v4cJmN1rT6wA",
+      "keyId": "1b4e28ba-2fa1-4d3b-a3f5-ef19b5a7633b",
+      "body": "{\"protocolVersion\":1,\"sentAt\":\"2026-11-10T14:00:00.000Z\",\"version\":\"v1.4.0\",\"uptimeS\":5123}",
+      "bodySha256": "8afa46fa6d58b8c9b044cc3d89b9d9662db31f2b1799c6600a72ed3f59df6a6e",
+      "canonicalString": "HALL-ED25519-V1\nPOST\n/api/device/heartbeat\n1762783200\nq8Xl2oQ0b8v4cJmN1rT6wA\n8afa46fa6d58b8c9b044cc3d89b9d9662db31f2b1799c6600a72ed3f59df6a6e\n1b4e28ba-2fa1-4d3b-a3f5-ef19b5a7633b",
+      "headers": {
+        "hall-timestamp": "1762783200",
+        "hall-nonce": "q8Xl2oQ0b8v4cJmN1rT6wA",
+        "hall-signature": "Eke5usdCwrnhpSIntsNAnZpIyZJY6IbbaQGbIFrdMi8-76oB5yNLkwrDfHxE_2uduQr7Y6PNKhPgGSe7PLPfBA",
+        "hall-device": "1b4e28ba-2fa1-4d3b-a3f5-ef19b5a7633b"
+      }
+    },
+    {
+      "name": "enrol",
+      "method": "POST",
+      "path": "/api/device/enrol",
+      "timestamp": 1762783200,
+      "nonce": "Zm9vYmFyYmF6cXV4MTIzNA",
+      "keyId": "enrol",
+      "body": "{\"protocolVersion\":1,\"claimCode\":\"K7QM-4TZP\",\"publicKey\":\"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo\",\"device\":{\"orquestraVersion\":\"v1.4.0\"}}",
+      "bodySha256": "ad201b98a68b3d0f9f2d042f4a33ef58558f76a3a4f4dd9771f51f18b9537a6f",
+      "canonicalString": "HALL-ED25519-V1\nPOST\n/api/device/enrol\n1762783200\nZm9vYmFyYmF6cXV4MTIzNA\nad201b98a68b3d0f9f2d042f4a33ef58558f76a3a4f4dd9771f51f18b9537a6f\nenrol",
+      "headers": {
+        "hall-timestamp": "1762783200",
+        "hall-nonce": "Zm9vYmFyYmF6cXV4MTIzNA",
+        "hall-signature": "jSEjIlF7iPx2uCwq9HX-rIerTtLO4ZHosa0BckmIwr6fIr5URJPTwe_DAmXSYaAP295sTXfXodChomwAWwwMDg"
+      }
+    }
+  ]
+}

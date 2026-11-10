@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:farad:hall:protocol:v1:enrol-response",
+  "title": "enrol-response",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "integer",
+      "description": "The protocol version Hall accepted the request in, and answers in"
+    },
+    "deviceId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+      "description": "The device's identity in Hall: the Hall-Device header of every later request"
+    },
+    "site": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "customer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "enrolledAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 time, UTC or with an offset, e.g. 2026-11-10T14:03:00.000Z"
+    },
+    "serverTime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 time, UTC or with an offset, e.g. 2026-11-10T14:03:00.000Z"
+    },
+    "intervals": {
+      "type": "object",
+      "properties": {
+        "heartbeatS": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 3600,
+          "description": "Send a heartbeat this often (seconds)"
+        },
+        "stateS": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "Send the state this often (seconds), and on a change of control mode"
+        }
+      },
+      "required": [
+        "heartbeatS",
+        "stateS"
+      ],
+      "description": "How often Hall wants each message"
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "deviceId",
+    "site",
+    "customer",
+    "enrolledAt",
+    "serverTime",
+    "intervals"
+  ]
+}

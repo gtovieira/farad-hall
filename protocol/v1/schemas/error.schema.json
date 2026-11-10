@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:farad:hall:protocol:v1:error",
+  "title": "error",
+  "type": "object",
+  "properties": {
+    "error": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "invalid",
+            "bad-request",
+            "unsupported-protocol",
+            "unauthorized",
+            "bad-signature",
+            "stale-timestamp",
+            "replayed-nonce",
+            "unknown-device",
+            "device-revoked",
+            "claim-code-invalid",
+            "claim-code-expired",
+            "claim-code-used",
+            "already-enrolled",
+            "rate-limited",
+            "internal"
+          ]
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "A machine code (DeviceErrorCode); the set may grow"
+    },
+    "message": {
+      "type": "string"
+    },
+    "hint": {
+      "type": "string"
+    },
+    "serverTime": {
+      "description": "Hall's clock, on a stale-timestamp: correct the offset and send again",
+      "type": "string",
+      "format": "date-time"
+    },
+    "supportedVersions": {
+      "description": "On unsupported-protocol: the versions Hall accepts",
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "message"
+        ]
+      }
+    }
+  },
+  "required": [
+    "error",
+    "message"
+  ]
+}

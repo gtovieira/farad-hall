@@ -1,0 +1,23 @@
+{
+  "name": "@hall/protocol",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "The Hall protocol: the contract between Farad Hall and the Orquestra's hall-agent (zod schemas, request signing, claim codes).",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "generate": "tsx --conditions=source src/generate.ts"
+  },
+  "dependencies": {
+    "@hall/openapi": "workspace:*",
+    "zod": "^4.6.0"
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:farad:hall:protocol:v1:events",
+  "title": "events",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "The protocol version this message is written in"
+    },
+    "events": {
+      "minItems": 1,
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The Orquestra's event id (a uuid): Hall keeps one copy per id, so a batch may be sent again"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO-8601 time, UTC or with an offset, e.g. 2026-11-10T14:03:00.000Z"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The service that raised it, e.g. control-engine"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The Orquestra's EventKind, e.g. fallback-entered (open: new kinds need no new protocol version)"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "warning",
+              "critical"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "chargerId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "connectorId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 64
+          },
+          "meterId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "data": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "id",
+          "timestamp",
+          "source",
+          "kind",
+          "severity",
+          "message"
+        ]
+      }
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "events"
+  ],
+  "description": "The Orquestra's warning and critical events, as they happen; what could not be sent, later, oldest first"
+}
