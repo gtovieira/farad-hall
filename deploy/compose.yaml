@@ -1,0 +1,134 @@
+# Farad Hall on a dedicated server (README: "Installing on a server").
+#   cd deploy && cp .env.example .env   (fill it in)
+#   docker compose up -d --build
+# Only Caddy publishes ports (80, 443). Postgres, MinIO and hall-api are on the internal network.
+name: farad-hall
+
+x-build: &build
+  context: ..
+  dockerfile: deploy/docker/Dockerfile
+  args:
+    HALL_VERSION: ${HALL_VERSION:-dev}
+
+services:
+  caddy:
+    build:
+      <<: *build
+      target: caddy
+    image: farad-hall/caddy:${HALL_VERSION:-dev}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      HALL_DOMAIN: ${HALL_DOMAIN:?set HALL_DOMAIN in deploy/.env}
+      HALL_ACME_EMAIL: ${HALL_ACME_EMAIL:?set HALL_ACME_EMAIL in deploy/.env}
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      hall-api:
+        condition: service_healthy
+
+  hall-api:
+    build:
+      <<: *build
+      target: api
+    image: farad-hall/api:${HALL_VERSION:-dev}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://hall:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}@postgres:5432/hall
+      HALL_PUBLIC_URL: https://${HALL_DOMAIN}
+      HALL_TRUST_PROXY: "1"
+      HALL_COOKIE_SECURE: "1"
+      HALL_LOG_LEVEL: ${HALL_LOG_LEVEL:-info}
+      HALL_ADMIN_EMAIL: ${HALL_ADMIN_EMAIL:-}
+      HALL_ADMIN_PASSWORD: ${HALL_ADMIN_PASSWORD:-}
+      HALL_ALERT_OFFLINE_MIN: ${HALL_ALERT_OFFLINE_MIN:-5}
+      HALL_ALERT_RECIPIENTS: ${HALL_ALERT_RECIPIENTS:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-0}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-Farad Hall <hall@localhost>}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hall
+      POSTGRES_USER: hall
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hall -d hall"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backup:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    environment:
+      PGHOST: postgres
+      PGUSER: hall
+      PGDATABASE: hall
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_HOUR_UTC: ${BACKUP_HOUR_UTC:-6}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - ./backup/backup.sh:/backup.sh:ro
+      - ${HALL_BACKUP_DIR:-./backups}:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Logs from the Orquestras (S3-compatible). Not used yet: the bucket waits for the next slice
+  # (per-device upload credentials). MinIO's community images are frozen at this release.
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-hall}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in deploy/.env}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    restart: "no"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-hall}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      HALL_LOGS_BUCKET: ${HALL_LOGS_BUCKET:-hall-logs}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mc alias set hall http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" &&
+        mc mb --ignore-existing "hall/$$HALL_LOGS_BUCKET" &&
+        mc anonymous set none "hall/$$HALL_LOGS_BUCKET" &&
+        echo "bucket $$HALL_LOGS_BUCKET ready"
+    depends_on:
+      minio:
+        condition: service_healthy
+
+volumes:
+  caddy-data:
+  caddy-config:
+  pg-data:
+  minio-data:

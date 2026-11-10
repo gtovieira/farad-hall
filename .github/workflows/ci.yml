@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  # Typecheck, lint, the generated contracts, and every test (the API tests start their own
+  # private Postgres: packages/test-support), then the production build.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # The pnpm version comes from package.json's packageManager.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: sudo apt-get update && sudo apt-get install -y postgresql
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - name: The Hall protocol files are current (protocol/v1)
+        run: pnpm --filter @hall/protocol generate --check
+      - name: The API contract is current (docs/api/openapi.json)
+        run: pnpm --filter @hall/api openapi --check
+      - run: pnpm test
+      - run: pnpm build
+
+  # The server deployment: the compose file resolves, both images build, the backup script is clean.
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet
+        env:
+          POSTGRES_PASSWORD: ci
+          MINIO_ROOT_PASSWORD: ci-minio-password
+      - run: docker build -f deploy/docker/Dockerfile --target api --build-arg HALL_VERSION=${{ github.sha }} -t farad-hall/api:ci .
+      - run: docker build -f deploy/docker/Dockerfile --target caddy -t farad-hall/caddy:ci .
+      - run: shellcheck deploy/backup/backup.sh

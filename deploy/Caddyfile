@@ -1,0 +1,37 @@
+# Farad Hall behind Caddy: TLS from Let's Encrypt for HALL_DOMAIN, the API at /api, the web UI
+# for everything else. Only Caddy is reachable from outside (ports 80 and 443).
+{
+	email {$HALL_ACME_EMAIL}
+}
+
+{$HALL_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# The API and the device protocol. The path reaches hall-api unchanged: a device signs it.
+	# Caddy sets X-Forwarded-For to the client's address (HALL_TRUST_PROXY=1 in hall-api).
+	handle /api/* {
+		reverse_proxy hall-api:8080
+	}
+
+	# The web UI: its files, and index.html for its client-side routes.
+	handle {
+		root * /srv/hall-web
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

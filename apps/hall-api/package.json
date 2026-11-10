@@ -11,6 +11,10 @@
       "default": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "migrations"
+  ],
   "bin": {
     "hall": "./dist/cli.js"
   },
